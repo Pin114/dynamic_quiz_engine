@@ -5,12 +5,6 @@ from models import TelemetryEvent, CoachRequest
 import sqlite3
 import uuid
 import json
-import os
-import google.generativeai as genai
-
-# 設定 Gemini API Key
-os.environ["GEMINI_API_KEY"] = "AIzaSyCz5aPQdDHxYi4J9c4qu9yVur9LRUoog3s"
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
@@ -19,24 +13,11 @@ SCHEMA_PATH = BASE_DIR / "db" / "schema.sql"
 
 
 def generate_ai_feedback(question, correct_ans, wrong_ans):
-    prompt_content = f"""
-    你是一個具有同理心的金融培訓 AI 教練。
-    學生在測驗中答錯了。
-    題目是：「{question}」
-    正確答案是：「{correct_ans}」
-    學生的錯誤選擇是：「{wrong_ans}」
-    請用簡潔且鼓勵的語氣，向學生解釋為什麼他的選擇是錯的，並點出正確答案的核心概念。
-    """
-    
-    try:
-        # 使用 Gemini 模型
-        model = genai.GenerativeModel('gemini-1.0-pro')
-        response = model.generate_content(prompt_content)
-        return response.text.strip()
-    except Exception as e:
-        print(f"Gemini API 錯誤: {e}")
-        # 備用回饋
-        return f"你選擇了『{wrong_ans}』，但正確答案是『{correct_ans}』。這題重點在於法規定義的精確用詞。請再接再厲！"
+    # 移除 Gemini API 串接，改用靜態 AI 教練回饋
+    return (
+        f"你選擇了『{wrong_ans}』，但正確答案是『{correct_ans}』。"
+        " 這題重點在於法規定義的精確用詞。請再接再厲！"
+    )
 
 
 def init_db():
