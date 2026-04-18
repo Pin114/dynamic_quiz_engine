@@ -37,11 +37,14 @@ export default function App() {
     logEvent(sessionId.current, q.id, "select", key, startTime.current);
 
     if (key !== q.correctKey) {
-      setWrongAnswers(prev => [...prev, {
-        question: q.content,
-        wrong: q.options[key],
-        correct: q.options[q.correctKey]
-      }]);
+      setWrongAnswers((prev) => [
+        ...prev,
+        {
+          question: q.content,
+          wrong: q.options[key],
+          correct: q.options[q.correctKey],
+        },
+      ]);
       const res = await fetch("/api/ai/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,19 +55,19 @@ export default function App() {
         }),
       });
       setCoach((await res.json()).feedback);
+      return;
+    }
+
+    if (index === questions.length - 1) {
+      await fetch("/api/telemetry/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(telemetryBuffer),
+      });
+      setShowReport(true);
     } else {
-      // 答對，直接處理下一題或結束
-      if (index === questions.length - 1) {
-        await fetch("/api/telemetry/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(telemetryBuffer),
-        });
-        setShowReport(true);
-      } else {
-        setIndex(index + 1);
-        startTime.current = Date.now();
-      }
+      setIndex(index + 1);
+      startTime.current = Date.now();
     }
   }
 

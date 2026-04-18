@@ -31,7 +31,7 @@ KGI_/
 
 - **7 分鐘微學習**：一次顯示一個問題，適合零碎時間學習
 - **無感遙測**：背景記錄點擊、懸停、作答時間等互動數據
-- **AI 教練**：答錯時提供個人化鼓勵與解釋
+- **AI 教練**：答錯時提供鼓勵與解釋回饋
 - **錯題報告**：完成測驗後顯示錯題總結
 - **響應式設計**：支援桌面與行動裝置
 
@@ -46,7 +46,6 @@ KGI_/
 ### 後端
 - **FastAPI**：高性能 Python Web 框架
 - **SQLite**：輕量級資料庫
-- **Google Gemini AI**：生成式 AI 教練
 - **Pydantic**：資料驗證
 
 ## 安裝與執行
@@ -66,14 +65,16 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements
 ```
 
-2. 設定 Gemini API Key：
-編輯 `main.py` 中的 `os.environ["GEMINI_API_KEY"]` 為您的有效 API Key。
-
-3. 啟動後端伺服器：
+2. 啟動後端伺服器：
 ```bash
 uvicorn main:app --reload
 ```
 伺服器將在 `http://127.0.0.1:8000` 運行。
+
+3. 若要查看遙測資料：
+```bash
+python view_data.py
+```
 
 ### 前端設定
 
@@ -87,6 +88,29 @@ npm install
 npm run dev
 ```
 前端將在 `http://localhost:5173` 運行。
+
+### 如何測試
+
+#### 後端
+```bash
+cd /Users/chenpinyu/Desktop/KGI_/dynamic-quiz-engine/backend
+source venv/bin/activate
+uvicorn main:app --reload
+```
+
+#### 前端
+```bash
+cd /Users/chenpinyu/Desktop/KGI_
+npm run dev
+```
+
+前端將在 `http://localhost:5173` 運行。
+
+#### 查看遙測資料
+```bash
+cd /Users/chenpinyu/Desktop/KGI_/dynamic-quiz-engine/backend
+python view_data.py
+```
 
 ## API 端點
 
@@ -142,6 +166,12 @@ npm run build
 
 ### 後端部署
 使用 Uvicorn 或 Gunicorn 部署 FastAPI 應用程式。
+
+### 遙測資料檢視
+後端啟動後可執行：
+```bash
+python dynamic-quiz-engine/backend/view_data.py
+```
 
 ## 授權
 

@@ -13,7 +13,7 @@ SCHEMA_PATH = BASE_DIR / "db" / "schema.sql"
 
 
 def generate_ai_feedback(question, correct_ans, wrong_ans):
-    # 移除 Gemini API 串接，改用靜態 AI 教練回饋
+    # 靜態 AI 教練回饋
     return (
         f"你選擇了『{wrong_ans}』，但正確答案是『{correct_ans}』。"
         " 這題重點在於法規定義的精確用詞。請再接再厲！"
@@ -21,17 +21,24 @@ def generate_ai_feedback(question, correct_ans, wrong_ans):
 
 
 def init_db():
+    is_new_db = False
     if not DB_PATH.exists():
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(DB_PATH) as conn:
             conn.executescript(SCHEMA_PATH.read_text())
-    seed_default_questions()
+        is_new_db = True
+    if is_new_db:
+        seed_default_questions()
 
 
 def seed_default_questions():
     with sqlite3.connect(DB_PATH) as conn:
-        # 刪除現有題目並重新插入
-        conn.execute("DELETE FROM QuizQuestions WHERE module_id = ?", (1,))
+        count = conn.execute(
+            "SELECT COUNT(*) FROM QuizQuestions WHERE module_id = ?",
+            (1,),
+        ).fetchone()[0]
+        if count != 0:
+            return
         sample_questions = [
             {
                 "module_id": 1,
