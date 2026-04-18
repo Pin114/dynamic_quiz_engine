@@ -52,18 +52,19 @@ export default function App() {
         }),
       });
       setCoach((await res.json()).feedback);
-    }
-
-    if (index === questions.length - 1) {
-      await fetch("/api/telemetry/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(telemetryBuffer),
-      });
-      setShowReport(true);
     } else {
-      setIndex(index + 1);
-      startTime.current = Date.now();
+      // 答對，直接處理下一題或結束
+      if (index === questions.length - 1) {
+        await fetch("/api/telemetry/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(telemetryBuffer),
+        });
+        setShowReport(true);
+      } else {
+        setIndex(index + 1);
+        startTime.current = Date.now();
+      }
     }
   }
 
@@ -161,7 +162,20 @@ export default function App() {
           </div>
         </div>
       </div>
-      {coach && <AiCoachModal text={coach} onClose={() => setCoach(null)} />}
+      {coach && <AiCoachModal text={coach} onClose={async () => {
+        setCoach(null);
+        if (index === questions.length - 1) {
+          await fetch("/api/telemetry/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(telemetryBuffer),
+          });
+          setShowReport(true);
+        } else {
+          setIndex(index + 1);
+          startTime.current = Date.now();
+        }
+      }} />}
     </div>
   );
 }

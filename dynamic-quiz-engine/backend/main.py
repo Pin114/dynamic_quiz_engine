@@ -5,11 +5,38 @@ from models import TelemetryEvent, CoachRequest
 import sqlite3
 import uuid
 import json
+import os
+import google.generativeai as genai
+
+# 設定 Gemini API Key
+os.environ["GEMINI_API_KEY"] = "AIzaSyCz5aPQdDHxYi4J9c4qu9yVur9LRUoog3s"
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "db" / "quiz.db"
 SCHEMA_PATH = BASE_DIR / "db" / "schema.sql"
+
+
+def generate_ai_feedback(question, correct_ans, wrong_ans):
+    prompt_content = f"""
+    你是一個具有同理心的金融培訓 AI 教練。
+    學生在測驗中答錯了。
+    題目是：「{question}」
+    正確答案是：「{correct_ans}」
+    學生的錯誤選擇是：「{wrong_ans}」
+    請用簡潔且鼓勵的語氣，向學生解釋為什麼他的選擇是錯的，並點出正確答案的核心概念。
+    """
+    
+    try:
+        # 使用 Gemini 模型
+        model = genai.GenerativeModel('gemini-1.0-pro')
+        response = model.generate_content(prompt_content)
+        return response.text.strip()
+    except Exception as e:
+        print(f"Gemini API 錯誤: {e}")
+        # 備用回饋
+        return f"你選擇了『{wrong_ans}』，但正確答案是『{correct_ans}』。這題重點在於法規定義的精確用詞。請再接再厲！"
 
 
 def init_db():
@@ -22,60 +49,57 @@ def init_db():
 
 def seed_default_questions():
     with sqlite3.connect(DB_PATH) as conn:
-        count = conn.execute(
-            "SELECT COUNT(*) FROM QuizQuestions WHERE module_id = ?",
-            (1,),
-        ).fetchone()[0]
-        if count == 0:
-            sample_questions = [
-                {
-                    "module_id": 1,
-                    "content": "以下哪一項不是個人資料保護法所定義的個人資料？",
-                    "options": {"A": "姓名", "B": "身分證號", "C": "公司名稱", "D": "電話號碼"},
-                    "correct_key": "C",
-                },
-                {
-                    "module_id": 1,
-                    "content": "依據個資法，蒐集個人資料時，最重要的是什麼？",
-                    "options": {
-                        "A": "事前通知與目的告知",
-                        "B": "資料保全設備",
-                        "C": "取得資料同意書",
-                        "D": "資料備份"},
-                    "correct_key": "A",
-                },
-                {
-                    "module_id": 1,
-                    "content": "個人資料保護法中，『個人資料』的定義不包括哪一項？",
-                    "options": {
-                        "A": "自然人之姓名",
-                        "B": "自然人之住址",
-                        "C": "法人之名稱",
-                        "D": "自然人之照片"},
-                    "correct_key": "C",
-                },
-                {
-                    "module_id": 1,
-                    "content": "當個人資料被非法蒐集、處理或利用時，當事人可以行使哪些權利？",
-                    "options": {
-                        "A": "查詢權",
-                        "B": "更正權",
-                        "C": "停止蒐集權",
-                        "D": "以上皆是"},
-                    "correct_key": "D",
-                },
-            ]
-            for q in sample_questions:
-                conn.execute(
-                    "INSERT INTO QuizQuestions (module_id, content, options_json, correct_key) VALUES (?,?,?,?)",
-                    (
-                        q["module_id"],
-                        q["content"],
-                        json.dumps(q["options"], ensure_ascii=False),
-                        q["correct_key"],
-                    ),
-                )
-            conn.commit()
+        # 刪除現有題目並重新插入
+        conn.execute("DELETE FROM QuizQuestions WHERE module_id = ?", (1,))
+        sample_questions = [
+            {
+                "module_id": 1,
+                "content": "以下哪一項不是個人資料保護法所定義的個人資料？",
+                "options": {"A": "姓名", "B": "身分證號", "C": "公司名稱", "D": "電話號碼"},
+                "correct_key": "C",
+            },
+            {
+                "module_id": 1,
+                "content": "依據個資法，蒐集個人資料時，最重要的是什麼？",
+                "options": {
+                    "A": "事前通知與目的告知",
+                    "B": "資料保全設備",
+                    "C": "取得資料同意書",
+                    "D": "資料備份"},
+                "correct_key": "A",
+            },
+            {
+                "module_id": 1,
+                "content": "個人資料保護法中，『個人資料』的定義不包括哪一項？",
+                "options": {
+                    "A": "自然人之姓名",
+                    "B": "自然人之住址",
+                    "C": "法人之名稱",
+                    "D": "自然人之照片"},
+                "correct_key": "C",
+            },
+            {
+                "module_id": 1,
+                "content": "當個人資料被非法蒐集、處理或利用時，當事人可以行使哪些權利？",
+                "options": {
+                    "A": "查詢權",
+                    "B": "更正權",
+                    "C": "停止蒐集權",
+                    "D": "以上皆是"},
+                "correct_key": "D",
+            },
+        ]
+        for q in sample_questions:
+            conn.execute(
+                "INSERT INTO QuizQuestions (module_id, content, options_json, correct_key) VALUES (?,?,?,?)",
+                (
+                    q["module_id"],
+                    q["content"],
+                    json.dumps(q["options"], ensure_ascii=False),
+                    q["correct_key"],
+                ),
+            )
+        conn.commit()
 
 
 def db():
@@ -127,10 +151,7 @@ def submit_telemetry(events: list[TelemetryEvent]):
 
 @app.post("/api/ai/coach")
 def ai_coach(req: CoachRequest):
-    feedback = (
-        f"你選擇了『{req.wrong}』，但正確答案是『{req.correct}』。"
-        "這題重點在於法規定義的精確用詞。"
-    )
+    feedback = generate_ai_feedback(req.question, req.correct, req.wrong)
     c = db().cursor()
     c.execute(
         "INSERT INTO AiFeedbackArchive VALUES (?,?,?,?)",
