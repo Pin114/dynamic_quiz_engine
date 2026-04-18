@@ -48,6 +48,11 @@ KGI_/
 - **SQLite**：輕量級資料庫
 - **Pydantic**：資料驗證
 
+## 專案清理狀態
+- 已移除舊版 `dynamic-quiz-engine/frontend` 子資料夾
+- 已清理 `dist/`、`node_modules/` 和 `dynamic-quiz-engine/backend/venv/`
+- 建議使用 `.gitignore` 保持專案乾淨
+
 ## 安裝與執行
 
 ### 環境需求
