@@ -4,6 +4,8 @@ import QuizCard from "./components/QuizCard";
 import AiCoachModal from "./components/AiCoachModal";
 import { telemetryBuffer, logEvent } from "./services/telemetry";
 
+// 定義了多個 useState 來驅動畫面更新
+// 使用 useRef 紀錄不需要觸發重新渲染的資訊
 export default function App() {
   const [questions, setQuestions] = useState([]);
   const [index, setIndex] = useState(0);
@@ -15,26 +17,26 @@ export default function App() {
   const sessionId = useRef(crypto.randomUUID());
   const startTime = useRef(Date.now());
 
-  useEffect(() => {
+  useEffect(() => { // 在頁面第一次載入時，從後端 API 獲取題目數據
     fetch("/api/quiz/module/1")
       .then(async (r) => {
         if (!r.ok) throw new Error(`Fetch failed: ${r.status}`);
-        return r.json();
+        return r.json(); 
       })
       .then((data) => {
-        setQuestions(data);
+        setQuestions(data); // 將獲取到的題目數據存儲在 state 中
       })
-      .catch((err) => {
+      .catch((err) => { // 如果獲取過程中出現錯誤，將錯誤信息存儲在 state 中
         setError(err.message);
       })
       .finally(() => {
-        setLoading(false);
+        setLoading(false); // 不管成功或失敗，都關閉「載入中」動畫
       });
   }, []);
 
   async function answer(key) {
     const q = questions[index];
-    logEvent(sessionId.current, q.id, "select", key, startTime.current);
+    logEvent(sessionId.current, q.id, "select", key, startTime.current); // 記錄使用者選擇的答案和花費的時間
 
     if (key !== q.correctKey) {
       setWrongAnswers((prev) => [
@@ -48,7 +50,7 @@ export default function App() {
       const res = await fetch("/api/ai/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify({ //  向 /api/ai/coach 發送 POST 請求，傳入題目與使用者的選項
           question: q.content,
           correct: q.options[q.correctKey],
           wrong: q.options[key],
@@ -58,6 +60,7 @@ export default function App() {
       return;
     }
 
+    // 如果是最後一題：將這段期間所有累積在 telemetryBuffer 的操作數據（滑鼠移過、點擊時間等）一次性 POST 給 /api/telemetry/submit 儲存，然後顯示結算報告。
     if (index === questions.length - 1) {
       await fetch("/api/telemetry/submit", {
         method: "POST",
@@ -65,12 +68,13 @@ export default function App() {
         body: JSON.stringify(telemetryBuffer),
       });
       setShowReport(true);
-    } else {
+    } else { // 如果不是最後一題：跳到下一題 (index + 1)，並重設下一題的計時起點。
       setIndex(index + 1);
       startTime.current = Date.now();
     }
   }
 
+  // 顯示 Bootstrap 的 Spinner 旋轉動畫
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -81,6 +85,7 @@ export default function App() {
     );
   }
 
+  //顯示錯誤訊息警告框
   if (error) {
     return (
       <div className="container mt-5">
@@ -103,6 +108,7 @@ export default function App() {
     );
   }
 
+  // 測驗完成 (showReport)：顯示錯題列表與「重新測驗」按鈕
   if (showReport) {
     return (
       <div className="container-fluid bg-light min-vh-100">
@@ -147,7 +153,7 @@ export default function App() {
         <div className="col-md-8 col-lg-6">
           <div className="card shadow mt-5">
             <div className="card-header bg-primary text-white">
-              <h1 className="h4 mb-0">KGI 動態測驗系統</h1>
+              <h1 className="h4 mb-0">動態測驗系統</h1>
             </div>
             <div className="card-body">
               <div className="mb-3">
@@ -155,7 +161,8 @@ export default function App() {
                   題目 {index + 1} / {questions.length}
                 </small>
               </div>
-              <QuizCard
+              <QuizCard //QuizCard：負責顯示題目。
+              // App.jsx 把目前這題的資料、sessionId 傳給它，並監聽它的 onAnswer 事件。
                 question={questions[index]}
                 sessionId={sessionId.current}
                 startTime={startTime.current}
@@ -165,7 +172,9 @@ export default function App() {
           </div>
         </div>
       </div>
-      {coach && <AiCoachModal text={coach} onClose={async () => {
+      
+      {coach && <AiCoachModal text={coach} onClose={async () => { 
+        //當 coach 狀態有文字時才出現。它有一個 onClose 邏輯，當使用者點擊「我懂了」關閉彈窗時，程式會檢查是否要進入下一題或結算。
         setCoach(null);
         if (index === questions.length - 1) {
           await fetch("/api/telemetry/submit", {

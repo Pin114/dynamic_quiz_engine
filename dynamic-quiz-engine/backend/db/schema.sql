@@ -1,3 +1,4 @@
+
 CREATE TABLE QuizQuestions (
   id INTEGER PRIMARY KEY,
   module_id INTEGER,
@@ -8,7 +9,7 @@ CREATE TABLE QuizQuestions (
 
 CREATE TABLE QuizSessions (
   session_id TEXT PRIMARY KEY,
-  agent_id TEXT,
+  '''agent_id TEXT,'''
   module_id INTEGER,
   score INTEGER,
   completed_at TEXT
