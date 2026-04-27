@@ -1,4 +1,4 @@
-# KGI 動態測驗引擎
+# 動態測驗引擎
 
 一個互動式微學習測驗系統，專為通勤或零碎時間設計。支援無感遙測記錄、AI 教練回饋，以及錯題報告。
 
@@ -47,11 +47,6 @@ KGI_/
 - **FastAPI**：高性能 Python Web 框架
 - **SQLite**：輕量級資料庫
 - **Pydantic**：資料驗證
-
-## 專案清理狀態
-- 已移除舊版 `dynamic-quiz-engine/frontend` 子資料夾
-- 已清理 `dist/`、`node_modules/` 和 `dynamic-quiz-engine/backend/venv/`
-- 建議使用 `.gitignore` 保持專案乾淨
 
 ## 安裝與執行
 
